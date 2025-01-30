@@ -5,5 +5,16 @@
   "manifest_version": 3,
   "action": {
     "default_popup": "popup.html"
-  }
+  },
+  "background": {
+    "service_worker": "scripts/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.youtube.com/watch*"],
+      "js": ["scripts/youtube.js"]
+    }
+  ],
+  "permissions": ["clipboardWrite"],
+  "host_permissions": ["https://*.youtube.com/watch*"]
 }
