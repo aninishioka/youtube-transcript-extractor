@@ -9,7 +9,7 @@ const TRANSCRIPT_TEXT_SELECTOR = '.segment-text';
 chrome.runtime.onMessage.addListener(handleMessage);
 
 
-async function handleMessage(request, sender, sendResponse) {
+async function handleMessage(request) {
   if (request.target !== 'content') {
     return;
   }
@@ -24,26 +24,26 @@ async function handleMessage(request, sender, sendResponse) {
 /** Gets transcript from DOM and sends to popup.js
  */
 async function getAndSendTranscript() {
-  // wait for show transcript button to load
-  waitForElementLoad(SHOW_TRANSCRIPT_BTN_SELECTOR, () => {
+  try {
+    await waitForElementLoad(SHOW_TRANSCRIPT_BTN_SELECTOR);
     document.querySelector(SHOW_TRANSCRIPT_BTN_SELECTOR).click();
 
-    // wait for transcript-rendering element to load
-    waitForElementLoad(TRANSCRIPT_TEXT_SELECTOR, () => {
-      const text = getTranscriptText();
+    await waitForElementLoad(TRANSCRIPT_TEXT_SELECTOR);
+    const text = getTranscriptText();
 
-      chrome.runtime.sendMessage({
-        type: "write-to-clipboard",
-        target: "popup",
-        text
-      });
+    chrome.runtime.sendMessage({
+      type: "write-to-clipboard",
+      target: "popup",
+      text
     });
-  });
+  } catch {
+    console.log('boo');
+  }
 }
 
 
 /** Gets video transcript from DOM.
- * @returns {string}
+ * @returns {string} Transcript text.
  */
 function getTranscriptText() {
   const transcriptSegments = [...document.getElementsByClassName(TRANSCRIPT_SEGMENT_SELECTOR)];
@@ -58,26 +58,37 @@ function getTranscriptText() {
 
 /** Executes callback function on element load.
  *
- * Based on answers on https://stackoverflow.com/questions/5525071/how-to-wait-until-an-element-exists
+ * Based on answers on https://stackoverflow.com/questions/34863788/how-to-check-if-an-element-has-been-loaded-on-a-page-before-running-a-script
  *
  * @param {string} selector CSS selector for element
  * @param {function} callback Function executed after element load
- * @returns {null}
+ * @returns {Promise}
  */
-async function waitForElementLoad(selector, callback) {
-  if (document.querySelector(selector)) {
-    callback();
-  }
-
-  const observer = new MutationObserver(_ => {
+async function waitForElementLoad(selector, timeout = 1000) {
+  return new Promise((resolve, reject) => {
     if (document.querySelector(selector)) {
-      observer.disconnect();
-      callback();
+      resolve();
     }
-  });
 
-  observer.observe(document.body, {
-    subtree: true,
-    childList: true
+    let timer;
+
+    const observer = new MutationObserver(() => {
+      if (document.querySelector(selector)) {
+        observer.disconnect();
+        if (timer) clearTimeout(timer);
+        return resolve();
+      }
+    });
+
+    observer.observe(document.body, {
+      subtree: true,
+      childList: true
+    });
+
+    timer = setTimeout(() => {
+      observer.disconnect();
+      return reject();
+    }, timeout);
+
   });
 }
