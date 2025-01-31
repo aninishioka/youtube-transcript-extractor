@@ -1,15 +1,18 @@
 "use strict";
 
-chrome.runtime.onMessage.addListener(handleMessage);
 
 const TRANSCRIPT_BUTTON = document.getElementById('copy-button');
+
+
+chrome.runtime.onMessage.addListener(handleMessage);
+
 
 TRANSCRIPT_BUTTON.addEventListener('click', () => {
   chrome.runtime.sendMessage({ type: 'copy-transcript', target: "sw" });
 });
 
 
-async function handleMessage(request, sender, sendResponse) {
+async function handleMessage(request) {
   if (request.target !== 'popup') {
     return;
   }

@@ -1,9 +1,5 @@
 "use strict";
 
-async function writeToClipboard(text) {
-  await navigator.clipboard.writeText(text);
-}
-
 async function handleMessage(request, sender, sendResponse) {
   if (request.target !== 'sw') {
     return;
